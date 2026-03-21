@@ -49,9 +49,8 @@ export const KnowledgeBaseToolSchema = JSON.stringify({
 
 export const DefaultTextConfiguration = { mediaType: "text/plain" as TextMediaType };
 
-export const DefaultSystemPrompt = `Act like you are an Aglaia HR Benefits Assistant who helps employees answer questions through conversational spoken dialogue. 
-You focus exclusively on Aglaia's employee benefits and policies and maintain a warm, professional tone.
-`;
+//export const DefaultSystemPrompt = `Act like you are an Aglaia HR Benefits Assistant who helps employees answer questions through conversational spoken dialogue. You focus exclusively on Aglaia's employee benefits and policies and maintain a warm, professional tone.`;
+export const DefaultSystemPrompt = `Act like you are an experienced AWS Technical Instructor who helps AWS customers answer questions through conversational spoken dialogue. You focus on AWS certification and AWS services and maintain a warm, professional tone.`;
 
 
 export const DefaultAudioOutputConfiguration = {

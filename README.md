@@ -1,5 +1,7 @@
 # Amazon Nova 2 Sonic TypeScript Example: Bedrock Knowledge Base Integration
 
+source: https://github.com/aws-samples/amazon-nova-samples/tree/main/speech-to-speech/amazon-nova-2-sonic/repeatable-patterns/bedrock-knowledge-base
+
 This project demonstrates how to build an intelligent conversational application by integrating Amazon Nova 2 Sonic model with Amazon Bedrock Knowledge Base. The application enables natural speech-to-speech interactions while leveraging a knowledge base to provide accurate, contextual responses about company benefit policies.
 
 ## Key Features

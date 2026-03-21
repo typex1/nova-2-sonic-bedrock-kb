@@ -258,7 +258,9 @@ export class NovaSonicBidirectionalStreamClient {
     const kbClient = new BedrockKnowledgeBaseClient();
 
     // Replace with your actual Knowledge Base ID
-    const KNOWLEDGE_BASE_ID = 'TZN7QB6GFH';
+    //this ID is orig from repo: const KNOWLEDGE_BASE_ID = 'TZN7QB6GFH';
+    // knowledge-base-customer-chat (EMEA Tiger Team, us-east-1)
+    const KNOWLEDGE_BASE_ID = 'LFGRFTJTFC';
 
     try {
       console.log(`Searching for: "${query}"`);
