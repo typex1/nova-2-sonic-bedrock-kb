@@ -1,7 +1,10 @@
 import { AudioType, AudioMediaType, TextMediaType } from "./types";
 
+// Adjust this value to control the maximum number of output tokens
+export const MaxOutputTokens = 180;
+
 export const DefaultInferenceConfiguration = {
-  maxTokens: 1024,
+  maxTokens: MaxOutputTokens,
   topP: 0.9,
   temperature: 0.7,
 };
@@ -41,7 +44,7 @@ export const KnowledgeBaseToolSchema = JSON.stringify({
   "properties": {
     "query": {
       "type": "string",
-      "description": "The user question about employment benefit policies"
+      "description": "The user is asking for advice regarding AWS training and certification"
     }
   },
   "required": ["query"]
@@ -56,5 +59,9 @@ export const DefaultSystemPrompt = `Act like you are an experienced AWS Technica
 export const DefaultAudioOutputConfiguration = {
   ...DefaultAudioInputConfiguration,
   sampleRateHertz: 24000,
-  voiceId: "tiffany",
+  // Female voices (en-US): tiffany | (en-GB): amy | (en-AU): olivia | (en-IN): kiara | (fr-FR): ambre | (it-IT): beatrice | (de-DE): tina | (es-US): lupe | (pt-BR): carolina | (hi-IN): kiara
+  // Male voices   (en-US): matthew | (en-IN): arjun | (fr-FR): florian | (it-IT): lorenzo | (de-DE): lennart | (es-US): carlos | (pt-BR): leo | (hi-IN): arjun
+  // Note: tiffany and matthew are polyglot voices (support all languages)
+  //voiceId: "tiffany",
+  voiceId: "matthew",
 };

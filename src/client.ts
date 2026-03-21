@@ -21,6 +21,7 @@ import {
   DefaultSystemPrompt,
   DefaultTextConfiguration,
   KnowledgeBaseToolSchema,
+  MaxOutputTokens,
 } from "./consts";
 import { BedrockKnowledgeBaseClient } from "./bedrock-kb-client";
 
@@ -180,7 +181,7 @@ export class NovaSonicBidirectionalStreamClient {
     });
 
     this.inferenceConfig = config.inferenceConfig ?? {
-      maxTokens: 1024,
+      maxTokens: MaxOutputTokens,
       topP: 0.9,
       temperature: 0.7,
     };
@@ -240,20 +241,20 @@ export class NovaSonicBidirectionalStreamClient {
     const tool = toolName.toLowerCase();
 
     switch (tool) {
-      case "retrieve_benefit_policy":
-        console.log(`Retrieving company benefits: ${JSON.stringify(toolUseContent)}`);
+      case "retrieve_aws_knowledge":
+        console.log(`Retrieving AWS knowledge: ${JSON.stringify(toolUseContent)}`);
         const kbContent = await this.parseToolUseContent(toolUseContent);
         if (!kbContent) {
           throw new Error('parsedContent is undefined');
         }
-        return this.queryBenefitPolicy(kbContent?.query, kbContent?.maxResults);
+        return this.queryAWSKnowledge(kbContent?.query, kbContent?.maxResults);
       default:
         console.log(`Tool ${tool} not supported`)
         throw new Error(`Tool ${tool} not supported`);
     }
   }
 
-  private async queryBenefitPolicy(query: string, numberOfResults: number = 3): Promise<Object> {
+  private async queryAWSKnowledge(query: string, numberOfResults: number = 3): Promise<Object> {
     // Create a client instance
     const kbClient = new BedrockKnowledgeBaseClient();
 
@@ -615,12 +616,12 @@ export class NovaSonicBidirectionalStreamClient {
           },
           toolConfiguration: {
             "toolChoice": {
-              "tool": { "name": "retrieve_benefit_policy" }
+              "auto": {}
             },
             tools: [{
               toolSpec: {
-                name: "retrieve_benefit_policy",
-                description: "Retrieves aglia company benefit policy. It includes medical, vision, financial etc.. Anything related with employee policy.",
+                name: "retrieve_aws_knowledge",
+                description: "Retrieves AWS training and certification knowledge. Use this when the user asks for advice regarding AWS training, certifications, or related AWS services.",
                 inputSchema: {
                   json: KnowledgeBaseToolSchema
                 }
