@@ -6,6 +6,7 @@ import { fromIni } from "@aws-sdk/credential-providers";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 import { NovaSonicBidirectionalStreamClient, StreamSession } from './client';
 import { Buffer } from 'node:buffer';
+import { logEntry } from './logger';
 
 // Create Express app and HTTP server
 const app = express();
@@ -94,7 +95,13 @@ async function createNewSession(socket: any): Promise<StreamSession> {
 
 // Helper function to set up event handlers for a session
 function setupSessionEventHandlers(session: StreamSession, socket: any) {
+    let lastRole: string | null = null;
 
+    session.onEvent('contentStart', (data) => {
+        console.log('contentStart:', data);
+        lastRole = data.role ?? null;
+        socket.emit('contentStart', data);
+    });
 
     session.onEvent('usageEvent', (data) => {
         console.log('usageEvent:', data);
@@ -106,13 +113,11 @@ function setupSessionEventHandlers(session: StreamSession, socket: any) {
         socket.emit('completionStart', data);
     });
 
-    session.onEvent('contentStart', (data) => {
-        console.log('contentStart:', data);
-        socket.emit('contentStart', data);
-    });
-
     session.onEvent('textOutput', (data) => {
         console.log('Text output:', data);
+        if (lastRole === 'USER') {
+            logEntry('user_prompt', socket.id, { text: data.content ?? data });
+        }
         socket.emit('textOutput', data);
     });
 
@@ -128,6 +133,7 @@ function setupSessionEventHandlers(session: StreamSession, socket: any) {
 
     session.onEvent('toolUse', (data) => {
         console.log('Tool use detected:', data.toolName);
+        logEntry('tool_use', socket.id, { toolName: data.toolName, toolUseId: data.toolUseId, input: data.content ?? data });
         socket.emit('toolUse', data);
     });
 
@@ -235,11 +241,7 @@ io.on('connection', (socket) => {
             // console.log(`Audio input received for ${socket.id}, session exists: ${!!session}, state: ${currentState}`);
 
             if (!session || currentState !== SessionState.ACTIVE) {
-                console.error(`Invalid session state for audio input: session=${!!session}, state=${currentState}`);
-                socket.emit('error', {
-                    message: 'No active session for audio input',
-                    details: `Session exists: ${!!session}, Session state: ${currentState}. Session must be ACTIVE to receive audio.`
-                });
+                console.debug(`Invalid session state for audio input: session=${!!session}, state=${currentState}`);
                 return;
             }
 
