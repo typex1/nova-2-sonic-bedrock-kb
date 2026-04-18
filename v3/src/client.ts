@@ -24,6 +24,7 @@ import {
   KiroToolSchema,
   MaxOutputTokens,
 } from "./consts";
+import { McpManager } from "./mcp-client";
 
 export interface NovaSonicBidirectionalStreamClientConfig {
   requestHandlerConfig?:
@@ -158,6 +159,15 @@ export class NovaSonicBidirectionalStreamClient {
   private activeSessions: Map<string, SessionData> = new Map();
   private sessionLastActivity: Map<string, number> = new Map();
   private sessionCleanupInProgress = new Set<string>();
+  private mcpManager: McpManager = new McpManager();
+
+  public async initializeMcp(configPath?: string): Promise<void> {
+    await this.mcpManager.initialize(configPath);
+  }
+
+  public async shutdownMcp(): Promise<void> {
+    await this.mcpManager.shutdown();
+  }
 
 
   constructor(config: NovaSonicBidirectionalStreamClientConfig) {
@@ -240,6 +250,25 @@ export class NovaSonicBidirectionalStreamClient {
   private async processToolUse(toolName: string, toolUseContent: object): Promise<Object> {
     const tool = toolName.toLowerCase();
 
+    // Check MCP tools first
+    if (this.mcpManager.hasTool(toolName)) {
+      console.log(`[mcp] Routing tool call to MCP: ${toolName}`);
+      const args = this.parseMcpToolContent(toolUseContent);
+      const result = await this.mcpManager.callTool(toolName, args);
+      // Extract text content from MCP result and truncate to 3 sentences
+      if (result?.content) {
+        const textParts = result.content
+          .filter((c: any) => c.type === "text")
+          .map((c: any) => c.text);
+        const full = textParts.join("\n");
+        // Keep only first 3 sentences
+        const sentences = full.match(/[^.!?]*[.!?]/g) || [full];
+        const short = sentences.slice(0, 3).join(" ").trim();
+        return { answer: short };
+      }
+      return result;
+    }
+
     switch (tool) {
       case "ask_kiro":
         console.log(`Asking Kiro: ${JSON.stringify(toolUseContent)}`);
@@ -251,6 +280,18 @@ export class NovaSonicBidirectionalStreamClient {
       default:
         console.log(`Tool ${tool} not supported`);
         throw new Error(`Tool ${tool} not supported`);
+    }
+  }
+
+  private parseMcpToolContent(toolUseContent: any): Record<string, any> {
+    try {
+      if (toolUseContent && typeof toolUseContent.content === 'string') {
+        return JSON.parse(toolUseContent.content);
+      }
+      return {};
+    } catch (error) {
+      console.error("Failed to parse MCP tool content:", error);
+      return {};
     }
   }
 
@@ -272,12 +313,15 @@ export class NovaSonicBidirectionalStreamClient {
     const workspace = process.env.KIRO_WORKSPACE || process.cwd();
     const timeout = parseInt(process.env.KIRO_TIMEOUT || "120000", 10);
 
+    // Append instruction to keep Kiro's response brief
+    const briefQuestion = `${question}\n\nIMPORTANT: Answer in three sentences maximum. Be concise and direct.`;
+
     console.log(`[kiro] Sending question: "${question.slice(0, 100)}"`);
 
     return new Promise((resolve) => {
       execFile(
         kiroCli,
-        ["chat", "--no-interactive", "--trust-all-tools", question],
+        ["chat", "--no-interactive", "--trust-all-tools", briefQuestion],
         {
           cwd: workspace,
           timeout,
@@ -614,15 +658,18 @@ export class NovaSonicBidirectionalStreamClient {
             "toolChoice": {
               "auto": {}
             },
-            tools: [{
-              toolSpec: {
-                name: "ask_kiro",
-                description: "Ask Kiro to perform a task or answer a question. Kiro is an AI coding agent with access to the local system — it can run commands, read/write files, check disk space, inspect processes, query APIs, generate code, and more. Use this tool whenever the user asks something that requires interacting with the system or performing a concrete task.",
-                inputSchema: {
-                  json: KiroToolSchema
+            tools: [
+              {
+                toolSpec: {
+                  name: "ask_kiro",
+                  description: "Ask Kiro to perform a task or answer a question. Kiro is an AI coding agent with access to the local system — it can run commands, read/write files, check disk space, inspect processes, query APIs, generate code, and more. Use this tool whenever the user asks something that requires interacting with the system or performing a concrete task.",
+                  inputSchema: {
+                    json: KiroToolSchema
+                  }
                 }
-              }
-            }
+              },
+              // Include all MCP tools
+              ...this.mcpManager.getToolSpecs()
             ]
           },
         },

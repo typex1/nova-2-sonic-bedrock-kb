@@ -79,9 +79,12 @@ async function initAudio() {
             await audioPlayer.audioContext.resume();
         }
 
-        statusElement.textContent = "Microphone ready. Click Start to begin.";
+        statusElement.textContent = "Microphone ready. Auto-starting...";
         statusElement.className = "ready";
         startButton.disabled = false;
+
+        // Auto-start streaming so no button press is needed
+        await startStreaming();
     } catch (error) {
         console.error("Error accessing microphone:", error);
         statusElement.textContent = "Error: " + error.message;

@@ -454,10 +454,20 @@ app.get('/health', (_req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Open http://localhost:${PORT} in your browser to access the application`);
-});
+
+(async () => {
+    // Initialize MCP servers before accepting connections
+    try {
+        await bedrockClient.initializeMcp();
+    } catch (error) {
+        console.error('MCP initialization failed (continuing without MCP):', error);
+    }
+
+    server.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+        console.log(`Open http://localhost:${PORT} in your browser to access the application`);
+    });
+})();
 
 process.on('SIGINT', async () => {
     console.log('Shutting down server...');
@@ -485,6 +495,9 @@ process.on('SIGINT', async () => {
                 bedrockClient.forceCloseSession(sessionId);
             }
         }));
+
+        // Shutdown MCP servers
+        await bedrockClient.shutdownMcp();
 
         // Now close the HTTP server with a promise
         await new Promise(resolve => server.close(resolve));
